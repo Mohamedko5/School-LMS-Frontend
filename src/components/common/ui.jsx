@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
+import { useEffect } from "react";
 
 export function Button({ children, variant = "primary", className = "", ...props }) {
   const styles = {
@@ -10,7 +11,7 @@ export function Button({ children, variant = "primary", className = "", ...props
     danger: "bg-red-600 text-white hover:bg-red-700",
   };
   return (
-    <button className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${styles[variant]} ${className}`} {...props}>
+    <button className={`inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-lg px-4 py-2 text-center text-sm font-semibold leading-snug transition disabled:cursor-not-allowed disabled:opacity-60 ${styles[variant]} ${className}`} {...props}>
       {children}
     </button>
   );
@@ -20,7 +21,7 @@ export function Input({ label, error, className = "", ...props }) {
   return (
     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
       {label && <span className="mb-1 block">{label}</span>}
-      <input className={`w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 ${className}`} {...props} />
+      <input className={`min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 ${className}`} {...props} />
       {error && <span className="mt-1 block text-sm text-red-600">{error}</span>}
     </label>
   );
@@ -30,7 +31,7 @@ export function Select({ label, children, className = "", ...props }) {
   return (
     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
       {label && <span className="mb-1 block">{label}</span>}
-      <select className={`w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 ${className}`} {...props}>
+      <select className={`min-h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 ${className}`} {...props}>
         {children}
       </select>
     </label>
@@ -41,7 +42,7 @@ export function Textarea({ label, className = "", ...props }) {
   return (
     <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
       {label && <span className="mb-1 block">{label}</span>}
-      <textarea className={`min-h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 ${className}`} {...props} />
+      <textarea className={`min-h-28 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 ${className}`} {...props} />
     </label>
   );
 }
@@ -55,11 +56,11 @@ export function Badge({ children, tone = "blue" }) {
     slate: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
     teal: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-200",
   };
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${tones[tone]}`}>{children}</span>;
+  return <span className={`inline-flex max-w-full items-center rounded-full px-2.5 py-1 text-xs font-semibold leading-snug ${tones[tone]}`}>{children}</span>;
 }
 
 export function Card({ children, className = "" }) {
-  return <div className={`card p-5 ${className}`}>{children}</div>;
+  return <div className={`card p-4 sm:p-5 ${className}`}>{children}</div>;
 }
 
 export function StatCard({ icon: Icon, label, value, detail, tone = "blue" }) {
@@ -69,9 +70,9 @@ export function StatCard({ icon: Icon, label, value, detail, tone = "blue" }) {
         <div className={`rounded-lg p-3 ${tone === "teal" ? "bg-teal-100 text-teal-700 dark:bg-teal-950" : tone === "amber" ? "bg-amber-100 text-amber-700 dark:bg-amber-950" : "bg-blue-100 text-blue-700 dark:bg-blue-950"}`}>
           <Icon size={22} />
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
-          <p className="text-2xl font-bold text-slate-950 dark:text-white">{value}</p>
+          <p className="break-words text-xl font-bold text-slate-950 dark:text-white sm:text-2xl">{value}</p>
         </div>
       </div>
       {detail && <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{detail}</p>}
@@ -94,15 +95,24 @@ export function ProgressBar({ value, label }) {
 }
 
 export function Modal({ open, title, children, onClose }) {
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (event) => {
+      if (event.key === "Escape") onClose?.();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-xl rounded-lg bg-white p-5 shadow-xl dark:bg-slate-900">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">{title}</h2>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-3 sm:p-4" onMouseDown={onClose}>
+      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col rounded-lg bg-white p-4 shadow-xl dark:bg-slate-900 sm:p-5" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="mb-4 flex shrink-0 items-center justify-between gap-3">
+          <h2 className="min-w-0 break-words text-lg font-bold">{title}</h2>
           <Button aria-label="Close modal" variant="ghost" className="px-2" onClick={onClose}><X size={18} /></Button>
         </div>
-        {children}
+        <div className="min-h-0 overflow-y-auto">{children}</div>
       </motion.div>
     </div>
   );
