@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { Link, useOutletContext, useParams } from "react-router-dom";
 import { format } from "date-fns";
 import {
@@ -53,68 +53,123 @@ export function StudentDashboard() {
   const { t, language } = useLanguage();
   const outlet = useOutletContext() || {};
   const user = outlet.user || { name: "Adam Hassan", role: "Student" };
+  const firstName = user.name?.split(" ")?.[0] || "Student";
   const dashboardCourses = courses?.slice?.(0, 4) || [];
-  const dueSoon = assignments?.slice?.(0, 4) || [];
-  const upcomingQuizzes = quizzes?.slice?.(0, 3) || [];
-  const recentGrades = grades?.slice?.(0, 4) || [];
-  const attendanceRecords = attendance || [];
+  const todaysTasks = assignments?.slice?.(0, 4)?.map((assignment, index) => ({
+    ...assignment,
+    action: index === 0 ? t("startHomework") : index === 1 ? t("continueLearning") : t("viewAllHomework"),
+    simpleStatus: [language === "ar" ? "ابدأ" : "Start", t("continueLearning"), t("submitted"), t("late")][index] || t("continueLearning"),
+  })) || [];
   const dashboardAnnouncements = announcements?.slice?.(0, 3) || [];
-  const weeklyActivity = chartSeries || [];
-  const presentDays = attendanceRecords.filter((item) => item?.status === "Present").length;
-  const attendancePercent = attendanceRecords.length ? Math.round((presentDays / attendanceRecords.length) * 100) : 0;
+  const latestUpdates = [
+    language === "ar" ? "تم تقييم واجب العلوم الخاص بك." : "Your Science homework was graded.",
+    language === "ar" ? "تمت إضافة درس جديد في اللغة الإنجليزية." : "A new English lesson was added.",
+    dashboardAnnouncements[0]?.title || (language === "ar" ? "يوم الرياضة المدرسي الخميس القادم." : "School sports day is next Thursday."),
+  ];
+  const nextClass = calendarEvents?.[0] || { title: "Mathematics", time: "9:00 AM", date: "Today" };
 
-  const badgeLabels = [t("steadyStudy"), t("kindCommunicator"), t("quizReady"), t("attendanceStar")];
-
-  return <Page title={`${t("goodMorning")}, ${user.name}`} actions={<Button><Plus size={18} /> {t("quickNote")}</Button>}>
-    <Card>
-      <div className="flex flex-wrap items-center justify-between gap-4">
+  return <Page title={t("home")} actions={null}>
+    <Card className="bg-gradient-to-br from-blue-50 to-teal-50 dark:from-slate-900 dark:to-slate-900">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-blue-700 dark:text-blue-200">{format(new Date(), "EEEE, MMMM d, yyyy")}</p>
-          <h3 className="mt-1 text-xl font-bold text-slate-950 dark:text-white">{t("readyStudy")}</h3>
-          <p className="mt-1 text-sm text-slate-500">{t("smallSteps")}</p>
+          <h2 className="mt-1 text-2xl font-black text-slate-950 dark:text-white sm:text-3xl">{t("goodMorning")}, {firstName}</h2>
+          <p className="mt-2 text-base text-slate-600 dark:text-slate-300">{t("todayIntro")}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline"><BookOpen size={18} /> {t("continueLesson")}</Button>
-          <Button variant="outline"><FileText size={18} /> {t("submitWork")}</Button>
-          <Button variant="outline"><MessageSquare size={18} /> {t("askTeacher")}</Button>
-        </div>
+        <Link to="/student/assignments"><Button className="w-full sm:w-auto"><FileText size={18} /> {t("viewAllHomework")}</Button></Link>
       </div>
     </Card>
-    <div className="dashboard-grid">
-      <StatCard icon={BookOpen} label={t("dailyProgress")} value="72%" detail={t("dailyProgressDetail")} />
-      <StatCard icon={Star} label={t("studyStreak")} value={language === "ar" ? "12 يومًا" : "12 days"} tone="teal" detail={t("studyStreakDetail")} />
-      <StatCard icon={Award} label={t("overallAverage")} value="84%" detail={t("overallAverageDetail")} />
-      <StatCard icon={CalendarDays} label={t("attendance")} value={`${attendancePercent}%`} tone="amber" detail={t("attendanceDetail")} />
+
+    <Card>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-xl font-bold">{t("todaysTasks")}</h3>
+        <Link className="text-sm font-semibold text-blue-700 dark:text-blue-200" to="/student/assignments">{t("viewAllHomework")}</Link>
+      </div>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        {todaysTasks.map((task, index) => {
+          const course = courses[index % courses.length];
+          const Icon = course?.icon || BookOpen;
+          return <div key={task.id} className="flex flex-col gap-3 rounded-lg border border-slate-200 p-4 dark:border-slate-800 sm:flex-row sm:items-center">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-200"><Icon size={24} /></div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-slate-500">{task.course}</p>
+              <h4 className="break-words text-base font-bold">{task.title}</h4>
+              <p className="text-sm text-slate-500">{t("due")} {format(new Date(task.due), "MMM d")}</p>
+            </div>
+            <div className="flex flex-col gap-2 sm:items-end">
+              <Badge tone={task.status === "Overdue" ? "red" : task.status === "Submitted" ? "green" : "amber"}>{task.simpleStatus}</Badge>
+              <Link to={`/student/assignments/${task.id}`}><Button className="w-full sm:w-auto">{task.action}</Button></Link>
+            </div>
+          </div>;
+        })}
+      </div>
+    </Card>
+
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+      <Card>
+        <h3 className="text-xl font-bold">{t("nextClass")}</h3>
+        <div className="mt-4 rounded-lg bg-slate-50 p-4 dark:bg-slate-800">
+          <p className="text-sm font-semibold text-blue-700 dark:text-blue-200">{nextClass.date} - {nextClass.time}</p>
+          <h4 className="mt-1 text-lg font-bold">{nextClass.title}</h4>
+          <p className="mt-1 text-sm text-slate-500">{t("teacher")}: Ms. Nur Aina</p>
+          <p className="text-sm text-slate-500">{t("room")}: B204</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button>{t("viewClass")}</Button>
+            <Link className="inline-flex min-h-11 items-center font-semibold text-blue-700 dark:text-blue-200" to="/student/calendar">{t("viewFullCalendar")}</Link>
+          </div>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-xl font-bold">{t("myClasses")}</h3>
+          <Link className="text-sm font-semibold text-blue-700 dark:text-blue-200" to="/student/courses">{t("viewAllClasses")}</Link>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {dashboardCourses.map((course) => {
+            const Icon = course.icon;
+            return <div key={course.id} className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-teal-100 text-teal-700 dark:bg-teal-950"><Icon size={22} /></div>
+                <div className="min-w-0">
+                  <h4 className="truncate font-bold">{course.name}</h4>
+                  <p className="truncate text-sm text-slate-500">{course.teacher}</p>
+                </div>
+              </div>
+              <div className="mt-4"><ProgressBar value={course.progress} label={language === "ar" ? "التقدم" : "Progress"} /></div>
+              <Link to={`/student/courses/${course.id}`}><Button variant="outline" className="mt-4 w-full">{t("continueLearning")}</Button></Link>
+            </div>;
+          })}
+        </div>
+      </Card>
     </div>
-    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
-      <Card><h3 className="mb-4 font-bold">{t("weeklyActivity")}</h3><div className="chart-box"><ResponsiveContainer width="100%" height="100%"><AreaChart data={weeklyActivity}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis width={32} /><Tooltip /><Area type="monotone" dataKey="study" stroke="#2563eb" fill="#bfdbfe" /></AreaChart></ResponsiveContainer></div></Card>
-      <Card><h3 className="mb-4 font-bold">{t("upcomingClasses")}</h3>{(calendarEvents || []).map((e) => <div key={e.id} className="mb-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-800"><b>{e.title}</b><p className="text-sm text-slate-500">{e.date} - {e.time}</p></div>)}</Card>
-    </div>
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <Card><h3 className="mb-3 font-bold">{t("courseProgress")}</h3>{dashboardCourses.map((course) => <div key={course.id} className="mb-3"><ProgressBar value={course.progress || 0} label={course.name || "Course"} /></div>)}</Card>
-      <Card><h3 className="mb-3 font-bold">{t("assignmentsDueSoon")}</h3>{dueSoon.map((a) => <p key={a.id} className="border-b border-slate-100 py-2 text-sm dark:border-slate-800">{a.title} - {format(new Date(a.due), "MMM d")}</p>)}</Card>
-      <Card><h3 className="mb-3 font-bold">{t("upcomingQuizzes")}</h3>{upcomingQuizzes.map((quiz) => <p key={quiz.id} className="border-b border-slate-100 py-2 text-sm dark:border-slate-800">{quiz.title} - {quiz.duration} min</p>)}</Card>
-      <Card><h3 className="mb-3 font-bold">{t("recentGrades")}</h3>{recentGrades.map((g) => <p key={g.subject} className="flex justify-between py-2 text-sm"><span>{g.subject}</span><b>{g.average}%</b></p>)}</Card>
-      <Card><h3 className="mb-3 font-bold">{t("attendanceSummary")}</h3><ProgressBar value={attendancePercent} label={t("presentDays")} /><p className="mt-3 text-sm text-slate-500">{presentDays} {t("presentRecords")} {attendanceRecords.length}</p></Card>
-      <Card><h3 className="mb-3 font-bold">{t("announcements")}</h3>{dashboardAnnouncements.map((item) => <p key={item.id} className="border-b border-slate-100 py-2 text-sm dark:border-slate-800">{item.title}</p>)}</Card>
-      <Card className="lg:col-span-3"><h3 className="mb-3 font-bold">{t("achievementBadges")}</h3><div className="flex flex-wrap gap-2">{badgeLabels.map((b) => <Badge key={b} tone="teal">{b}</Badge>)}</div></Card>
-    </div>
+
+    <Card>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-xl font-bold">{t("latestUpdates")}</h3>
+        <Link className="text-sm font-semibold text-blue-700 dark:text-blue-200" to="/student/profile">{t("viewAllUpdates")}</Link>
+      </div>
+      <div className="space-y-3">
+        {latestUpdates.slice(0, 3).map((update) => <p key={update} className="rounded-lg bg-slate-50 p-3 text-base text-slate-700 dark:bg-slate-800 dark:text-slate-200">{update}</p>)}
+      </div>
+    </Card>
   </Page>;
 }
-
 export function CoursesPage({ mode = "student" }) {
+  const { t } = useLanguage();
   const [query, setQuery] = useState("");
   const [view, setView] = useState("grid");
   const filtered = courses.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()) || c.teacher.toLowerCase().includes(query.toLowerCase()));
-  return <Page title={mode === "teacher" ? "Teacher Courses" : "My Courses"} actions={<Button className="w-full sm:w-auto" variant="outline" onClick={() => setView(view === "grid" ? "list" : "grid")}>{view === "grid" ? "List View" : "Grid View"}</Button>}><SearchFilters query={query} setQuery={setQuery}><Select aria-label="Filter progress"><option>All progress</option><option>In progress</option><option>Almost complete</option></Select><Select aria-label="Sort courses"><option>Sort by recent</option><option>Sort by progress</option></Select></SearchFilters><div className={view === "grid" ? "responsive-grid" : "space-y-4"}>{filtered.map((course) => <CourseCard key={course.id} course={course} base={mode === "teacher" ? "teacher" : "student"} />)}</div></Page>;
+  return <Page title={mode === "teacher" ? "Teacher Courses" : t("myClasses")} actions={<Button className="w-full sm:w-auto" variant="outline" onClick={() => setView(view === "grid" ? "list" : "grid")}>{view === "grid" ? "List View" : "Grid View"}</Button>}><SearchFilters query={query} setQuery={setQuery}><Select aria-label="Filter progress"><option>All progress</option><option>Active</option><option>Completed</option></Select></SearchFilters><div className={view === "grid" ? "responsive-grid" : "space-y-4"}>{filtered.map((course) => <CourseCard key={course.id} course={course} base={mode === "teacher" ? "teacher" : "student"} />)}</div></Page>;
 }
 
 export function CourseDetails() {
+  const { t } = useLanguage();
   const { id } = useParams();
   const course = courses.find((c) => c.id === id) || courses[0];
-  const [tab, setTab] = useState("Overview");
-  const tabs = ["Overview", "Lessons", "Assignments", "Quizzes", "Resources", "Discussion"];
-  return <Page title={course.name}><Card><div className="rounded-lg p-4 sm:p-6" style={{ background: course.image }}><h3 className="break-words text-2xl font-black text-slate-950 sm:text-3xl">{course.name}</h3><p className="break-words">{course.teacher} - {course.schedule}</p></div><div className="mt-5"><ProgressBar value={course.progress} label="Course progress" /></div><div className="-mx-1 mt-5 flex gap-2 overflow-x-auto px-1 pb-1">{tabs.map((t) => <Button key={t} className="shrink-0" variant={tab === t ? "primary" : "outline"} onClick={() => setTab(t)}>{t}</Button>)}</div></Card>{tab === "Lessons" ? <LessonsPage embedded courseId={course.id} /> : <Card><h3 className="font-bold">{tab}</h3><p className="mt-2 text-slate-600 dark:text-slate-300">{course.description}. Learning objectives include confident practice, clear explanations, reflection, and steady weekly progress.</p><div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"><StatCard icon={BookOpen} label="Lessons" value={course.lessons} /><StatCard icon={FileText} label="Assignments" value="4" /><StatCard icon={MessageSquare} label="Discussion posts" value="18" /></div></Card>}</Page>;
+  const [tab, setTab] = useState("Lessons");
+  const tabs = ["Lessons", t("homework"), t("tests"), t("resources")];
+  return <Page title={course.name}><Card><div className="rounded-lg p-4 sm:p-6" style={{ background: course.image }}><h3 className="break-words text-2xl font-black text-slate-950 sm:text-3xl">{course.name}</h3><p className="break-words">{course.teacher} - {course.schedule}</p></div><div className="mt-5"><ProgressBar value={course.progress} label={t("courseProgress")} /></div><div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-slate-600 dark:text-slate-300">Next: {lessons.find((lesson) => lesson.courseId === course.id)?.title || "Continue your next lesson"}</p><Button>{t("continueLearning")}</Button></div><div className="-mx-1 mt-5 flex gap-2 overflow-x-auto px-1 pb-1">{tabs.map((label) => <Button key={label} className="shrink-0" variant={tab === label ? "primary" : "outline"} onClick={() => setTab(label)}>{label}</Button>)}</div></Card>{tab === "Lessons" ? <LessonsPage embedded courseId={course.id} /> : <Card><h3 className="font-bold">{tab}</h3><p className="mt-2 text-slate-600 dark:text-slate-300">{course.description}</p></Card>}</Page>;
 }
 
 export function LessonsPage({ embedded = false, courseId }) {
@@ -129,10 +184,11 @@ export function LessonViewer() {
 }
 
 export function AssignmentsPage() {
+  const { t } = useLanguage();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("All");
   const rows = assignments.filter((a) => (status === "All" || a.status === status) && a.title.toLowerCase().includes(query.toLowerCase()));
-  return <Page title="Assignments"><SearchFilters query={query} setQuery={setQuery}><Select value={status} onChange={(e) => setStatus(e.target.value)}>{["All", "Due soon", "Submitted", "Graded", "Overdue"].map((s) => <option key={s}>{s}</option>)}</Select></SearchFilters><div className="responsive-grid">{rows.map((item) => <AssignmentCard key={item.id} item={item} />)}</div></Page>;
+  return <Page title={t("homework")}><SearchFilters query={query} setQuery={setQuery}><Select value={status} onChange={(e) => setStatus(e.target.value)}>{["All", "Due soon", "Submitted", "Graded", "Overdue"].map((s) => <option key={s}>{s}</option>)}</Select></SearchFilters><div className="responsive-grid">{rows.map((item) => <AssignmentCard key={item.id} item={item} />)}</div></Page>;
 }
 
 export function AssignmentDetails() {
@@ -143,7 +199,8 @@ export function AssignmentDetails() {
 }
 
 export function QuizzesPage() {
-  return <Page title="Quizzes"><div className="responsive-grid">{quizzes.map((q) => <QuizCard key={q.id} item={q} />)}</div></Page>;
+  const { t } = useLanguage();
+  return <Page title={t("tests")}><div className="responsive-grid">{quizzes.map((q) => <QuizCard key={q.id} item={q} />)}</div></Page>;
 }
 
 export function QuizInterface() {
@@ -157,7 +214,11 @@ export function QuizInterface() {
 }
 
 export function GradesPage() {
-  return <Page title="Grades"><div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"><StatCard icon={Award} label="Overall average" value="84%" /><StatCard icon={Star} label="GPA style" value="3.6" tone="teal" /><StatCard icon={Download} label="Report" value="Ready" tone="amber" /></div><Card><div className="chart-box"><ResponsiveContainer width="100%" height="100%"><LineChart data={grades[0].trend}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="month" /><YAxis width={32} /><Tooltip /><Line dataKey="score" stroke="#2563eb" strokeWidth={3} /></LineChart></ResponsiveContainer></div></Card><div className="grid grid-cols-1 gap-4 md:grid-cols-2">{grades.map((g) => <Card key={g.subject}><div className="flex flex-wrap justify-between gap-2"><b>{g.subject}</b><Badge tone={g.average >= 80 ? "green" : "amber"}>{g.average}%</Badge></div><p className="mt-2 text-sm text-slate-500">{g.feedback}</p></Card>)}</div></Page>;
+  const { t } = useLanguage();
+  const attendanceRecords = attendance || [];
+  const presentDays = attendanceRecords.filter((item) => item?.status === "Present").length;
+  const attendancePercent = attendanceRecords.length ? Math.round((presentDays / attendanceRecords.length) * 100) : 0;
+  return <Page title={t("results")}><div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"><StatCard icon={Award} label={t("overallAverage")} value="84%" detail="Good" /><StatCard icon={CalendarDays} label={t("attendance")} value={`${attendancePercent}%`} tone="teal" detail={`${presentDays} ${t("presentRecords")} ${attendanceRecords.length}`} /><StatCard icon={Download} label="Report" value="Ready" tone="amber" /></div><Card><h3 className="mb-3 font-bold">Recent trend</h3><div className="chart-box"><ResponsiveContainer width="100%" height="100%"><LineChart data={grades[0].trend}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="month" /><YAxis width={32} /><Tooltip /><Line dataKey="score" stroke="#2563eb" strokeWidth={3} /></LineChart></ResponsiveContainer></div><Button variant="outline" className="mt-4">View detailed report</Button></Card><div className="grid grid-cols-1 gap-4 md:grid-cols-2">{grades.map((g) => <Card key={g.subject}><div className="flex flex-wrap justify-between gap-2"><b>{g.subject}</b><Badge tone={g.average >= 80 ? "green" : "amber"}>{g.average}%</Badge></div><p className="mt-2 text-sm text-slate-500">{g.feedback}</p></Card>)}</div></Page>;
 }
 
 export function AttendancePage({ teacher = false }) {
@@ -187,7 +248,8 @@ export function ResourcesPage() {
 }
 
 export function ProfilePage() {
-  return <Page title="Student Profile"><div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)]"><Card className="text-center"><div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-blue-100 text-3xl font-bold text-blue-700 sm:h-24 sm:w-24">A</div><h3 className="mt-4 break-words text-xl font-bold">Adam Hassan</h3><p className="text-slate-500">Grade 8A - ST2026014</p><Badge tone="green">Active learner</Badge></Card><Card><h3 className="font-bold">Learning Statistics</h3><div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"><StatCard icon={Award} label="Badges" value="8" /><StatCard icon={BookOpen} label="Courses" value="6" /><StatCard icon={Clock} label="Study hours" value="42" /></div><Textarea className="mt-4" label="Editable personal note" defaultValue="I learn best with short practice sessions and examples." /></Card></div></Page>;
+  const { t } = useLanguage();
+  return <Page title={t("profile")}><div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)]"><Card className="text-center"><div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-blue-100 text-3xl font-bold text-blue-700 sm:h-24 sm:w-24">A</div><h3 className="mt-4 break-words text-xl font-bold">Adam Hassan</h3><p className="text-slate-500">Grade 8A - ST2026014</p><Badge tone="green">Active learner</Badge></Card><div className="space-y-4"><Card><h3 className="font-bold">{t("attendanceSummary")}</h3><div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3"><StatCard icon={CalendarDays} label={t("attendance")} value="94%" /><StatCard icon={CheckCircle2} label="Present" value="24" tone="teal" /><StatCard icon={Clock} label="Late" value="2" tone="amber" /></div></Card><Card><h3 className="font-bold">{t("achievementBadges")}</h3><div className="mt-3 flex flex-wrap gap-2">{[t("steadyStudy"), t("kindCommunicator"), t("quizReady"), t("attendanceStar")].map((badge) => <Badge key={badge} tone="teal">{badge}</Badge>)}</div></Card><Card><h3 className="font-bold">{t("settings")}</h3><div className="mt-4 grid gap-2 sm:flex sm:flex-wrap"><Link to="/student/settings"><Button variant="outline">{t("settings")}</Button></Link><Button variant="outline">{t("notifications")}</Button></div></Card></div></div></Page>;
 }
 
 export function AchievementsPage() {
@@ -266,3 +328,4 @@ export function GenericRolePage() {
 export function routeBaseFor(role) {
   return roleBase[role] || "student";
 }
+

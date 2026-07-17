@@ -26,7 +26,16 @@ const baseItems = [
 ];
 
 const roleItems = {
-  Student: baseItems.concat([["achievements", "achievements", Trophy], ["profile", "profile", Users]]),
+  Student: [
+    ["home", "dashboard", Home],
+    ["myClasses", "courses", BookOpen],
+    ["homework", "assignments", ClipboardList],
+    ["tests", "quizzes", CheckSquare],
+    ["calendar", "calendar", CalendarDays],
+    ["results", "grades", Trophy],
+    ["messages", "messages", MessageSquare],
+    ["profile", "profile", Users],
+  ],
   Teacher: [
     ["dashboard", "dashboard", Home], ["courses", "courses", BookOpen], ["courseManagement", "manage-course", Shield],
     ["lessons", "lesson-form", GraduationCap], ["assignments", "assignments", ClipboardList], ["submissions", "submissions", CheckSquare],
@@ -166,9 +175,9 @@ export default function AppLayout({ user, setUser, theme, setTheme }) {
         {safeUser.role === "Student" && (
           <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden dark:border-slate-800 dark:bg-slate-950">
             {[
-              ["dashboard", "dashboard", Home],
-              ["courses", "courses", BookOpen],
-              ["assignments", "assignments", ClipboardList],
+              ["home", "dashboard", Home],
+              ["myClasses", "courses", BookOpen],
+              ["homework", "assignments", ClipboardList],
               ["calendar", "calendar", CalendarDays],
               ["profile", "profile", Users],
             ].map(([labelKey, slug, Icon]) => <NavLink key={slug} to={`/${rolePath(safeUser.role)}/${slug}`} className="grid min-w-0 place-items-center gap-1 px-1 py-2 text-[11px] leading-tight"><Icon size={18} /><span className="max-w-full truncate">{t(labelKey)}</span></NavLink>)}
