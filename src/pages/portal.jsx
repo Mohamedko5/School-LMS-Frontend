@@ -30,23 +30,21 @@ function CourseCard({ course, base = "student" }) {
   const Icon = course.icon;
   return (
     <Card className="overflow-hidden">
-      <div className="mb-4 h-24 rounded-lg p-4" style={{ background: course.image }}><Icon className="text-blue-700" size={30} /></div>
+      <div className="mb-4 grid h-32 place-items-center rounded-lg p-4" style={{ background: course.image }}><Icon className="text-blue-700" size={38} /></div>
       <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><h3 className="break-words font-bold">{course.name}</h3><p className="text-sm text-slate-500">{course.teacher} - {course.lessons} lessons</p></div><Badge>{course.grade}</Badge></div>
-      <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">{course.description}</p>
       <div className="mt-4"><ProgressBar value={course.progress} label="Progress" /></div>
-      <div className="mt-4 flex items-center justify-between text-sm text-slate-500"><span>{course.nextAssignment}</span><span>{course.lastActivity}</span></div>
-      <Link to={`/${base}/courses/${course.id}`}><Button className="mt-4 w-full">Continue Learning</Button></Link>
+      <Link to={`/${base}/courses/${course.id}`}><Button className="mt-4 w-full">{base === "student" ? "Continue Learning" : "Open Course"}</Button></Link>
     </Card>
   );
 }
 
 function AssignmentCard({ item }) {
   const days = Math.ceil((new Date(item.due) - new Date()) / 86400000);
-  return <Card><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">{item.title}</h3><p className="text-sm text-slate-500">{item.course} - {item.teacher}</p></div><Badge tone={item.status === "Overdue" ? "red" : item.status === "Graded" ? "green" : "amber"}>{item.status}</Badge></div><p className="mt-3 text-sm">Due {format(new Date(item.due), "MMM d, yyyy")} - {item.marks} marks - {days >= 0 ? `${days} days remaining` : "Late"}</p><Link to={`/student/assignments/${item.id}`}><Button variant="outline" className="mt-4">Open Assignment</Button></Link></Card>;
+  return <Card><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">{item.title}</h3><p className="text-sm text-slate-500">{item.course}</p></div><Badge tone={item.status === "Overdue" ? "red" : item.status === "Graded" ? "green" : "amber"}>{item.status}</Badge></div><p className="mt-3 text-sm">Due {format(new Date(item.due), "MMM d, yyyy")} - {days >= 0 ? `${days} days remaining` : "Late"}</p><Link to={`/student/assignments/${item.id}`}><Button className="mt-4 w-full">{item.status === "Graded" ? "View Feedback" : "Continue"}</Button></Link></Card>;
 }
 
 function QuizCard({ item }) {
-  return <Card><div className="flex justify-between gap-3"><div><h3 className="font-bold">{item.title}</h3><p className="text-sm text-slate-500">{item.course}</p></div><Badge tone={item.status === "Completed" ? "green" : "blue"}>{item.status}</Badge></div><p className="mt-3 text-sm">{item.questions} questions - {item.duration} min - {item.attempts} attempt(s)</p><p className="text-sm text-slate-500">Deadline {format(new Date(item.deadline), "MMM d")}</p><Link to={`/student/quizzes/${item.id}`}><Button className="mt-4">{item.status === "Completed" ? "Review Results" : "Start Quiz"}</Button></Link></Card>;
+  return <Card><div className="flex justify-between gap-3"><div><h3 className="font-bold">{item.title}</h3><p className="text-sm text-slate-500">{item.course}</p></div><Badge tone={item.status === "Completed" ? "green" : "blue"}>{item.status}</Badge></div><p className="mt-3 text-sm">{item.questions} questions - {item.duration} min</p><p className="text-sm text-slate-500">Date {format(new Date(item.deadline), "MMM d")}</p><Link to={`/student/quizzes/${item.id}`}><Button className="mt-4 w-full">{item.status === "Completed" ? "View Result" : "Start Test"}</Button></Link></Card>;
 }
 
 export function StudentDashboard() {
@@ -67,6 +65,8 @@ export function StudentDashboard() {
     dashboardAnnouncements[0]?.title || (language === "ar" ? "يوم الرياضة المدرسي الخميس القادم." : "School sports day is next Thursday."),
   ];
   const nextClass = calendarEvents?.[0] || { title: "Mathematics", time: "9:00 AM", date: "Today" };
+  const currentCourse = dashboardCourses[0] || courses[0];
+  const CurrentIcon = currentCourse?.icon || BookOpen;
 
   return <Page title={t("home")} actions={null}>
     <Card className="bg-gradient-to-br from-blue-50 to-teal-50 dark:from-slate-900 dark:to-slate-900">
@@ -76,13 +76,29 @@ export function StudentDashboard() {
           <h2 className="mt-1 text-2xl font-black text-slate-950 dark:text-white sm:text-3xl">{t("goodMorning")}, {firstName}</h2>
           <p className="mt-2 text-base text-slate-600 dark:text-slate-300">{t("todayIntro")}</p>
         </div>
-        <Link to="/student/assignments"><Button className="w-full sm:w-auto"><FileText size={18} /> {t("viewAllHomework")}</Button></Link>
+        <Link to={`/student/courses/${currentCourse.id}`}><Button className="w-full sm:w-auto"><BookOpen size={18} /> {t("continueLearningFull")}</Button></Link>
+      </div>
+    </Card>
+
+    <Card>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-center">
+        <div className="grid min-h-48 place-items-center rounded-lg bg-slate-50 dark:bg-slate-800">
+          <div className="grid h-24 w-24 place-items-center rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-200"><CurrentIcon size={44} /></div>
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-blue-700 dark:text-blue-200">{t("continueLearningFull")}</p>
+          <h3 className="mt-1 break-words text-2xl font-black text-slate-950 dark:text-white">{currentCourse.name}</h3>
+          <p className="mt-2 text-base text-slate-600 dark:text-slate-300">Unit 4: Fractions and Decimals</p>
+          <p className="mt-1 text-sm text-slate-500">{t("teacher")}: {currentCourse.teacher}</p>
+          <div className="mt-5"><ProgressBar value={currentCourse.progress} label={`${currentCourse.progress}% completed`} /></div>
+          <Link to={`/student/lessons/lesson-1`}><Button className="mt-5 w-full sm:w-auto">{t("continueLearningFull")}</Button></Link>
+        </div>
       </div>
     </Card>
 
     <Card>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-xl font-bold">{t("todaysTasks")}</h3>
+        <h3 className="text-xl font-bold">{t("dueSoon")}</h3>
         <Link className="text-sm font-semibold text-blue-700 dark:text-blue-200" to="/student/assignments">{t("viewAllHomework")}</Link>
       </div>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
@@ -94,7 +110,7 @@ export function StudentDashboard() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-slate-500">{task.course}</p>
               <h4 className="break-words text-base font-bold">{task.title}</h4>
-              <p className="text-sm text-slate-500">{t("due")} {format(new Date(task.due), "MMM d")}</p>
+              <p className="text-sm text-slate-500">{t("dueToday")} · {format(new Date(task.due), "MMM d")}</p>
             </div>
             <div className="flex flex-col gap-2 sm:items-end">
               <Badge tone={task.status === "Overdue" ? "red" : task.status === "Submitted" ? "green" : "amber"}>{task.simpleStatus}</Badge>
@@ -160,16 +176,17 @@ export function CoursesPage({ mode = "student" }) {
   const [query, setQuery] = useState("");
   const [view, setView] = useState("grid");
   const filtered = courses.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()) || c.teacher.toLowerCase().includes(query.toLowerCase()));
-  return <Page title={mode === "teacher" ? "Teacher Courses" : t("myClasses")} actions={<Button className="w-full sm:w-auto" variant="outline" onClick={() => setView(view === "grid" ? "list" : "grid")}>{view === "grid" ? "List View" : "Grid View"}</Button>}><SearchFilters query={query} setQuery={setQuery}><Select aria-label="Filter progress"><option>All progress</option><option>Active</option><option>Completed</option></Select></SearchFilters><div className={view === "grid" ? "responsive-grid" : "space-y-4"}>{filtered.map((course) => <CourseCard key={course.id} course={course} base={mode === "teacher" ? "teacher" : "student"} />)}</div></Page>;
+  return <Page title={mode === "teacher" ? "Teacher Courses" : t("myClasses")} actions={<Button className="w-full sm:w-auto" variant="outline" onClick={() => setView(view === "grid" ? "list" : "grid")}>{view === "grid" ? "List View" : "Grid View"}</Button>}><p className="text-base text-slate-600 dark:text-slate-300">{mode === "teacher" ? "Courses you are teaching this term." : "Continue your classes and see your progress."}</p><SearchFilters query={query} setQuery={setQuery}><Select aria-label="Filter progress"><option>All</option><option>In Progress</option><option>Completed</option></Select></SearchFilters><div className={view === "grid" ? "responsive-grid" : "space-y-4"}>{filtered.map((course) => <CourseCard key={course.id} course={course} base={mode === "teacher" ? "teacher" : "student"} />)}</div></Page>;
 }
 
 export function CourseDetails() {
   const { t } = useLanguage();
   const { id } = useParams();
   const course = courses.find((c) => c.id === id) || courses[0];
-  const [tab, setTab] = useState("Lessons");
-  const tabs = ["Lessons", t("homework"), t("tests"), t("resources")];
-  return <Page title={course.name}><Card><div className="rounded-lg p-4 sm:p-6" style={{ background: course.image }}><h3 className="break-words text-2xl font-black text-slate-950 sm:text-3xl">{course.name}</h3><p className="break-words">{course.teacher} - {course.schedule}</p></div><div className="mt-5"><ProgressBar value={course.progress} label={t("courseProgress")} /></div><div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-slate-600 dark:text-slate-300">Next: {lessons.find((lesson) => lesson.courseId === course.id)?.title || "Continue your next lesson"}</p><Button>{t("continueLearning")}</Button></div><div className="-mx-1 mt-5 flex gap-2 overflow-x-auto px-1 pb-1">{tabs.map((label) => <Button key={label} className="shrink-0" variant={tab === label ? "primary" : "outline"} onClick={() => setTab(label)}>{label}</Button>)}</div></Card>{tab === "Lessons" ? <LessonsPage embedded courseId={course.id} /> : <Card><h3 className="font-bold">{tab}</h3><p className="mt-2 text-slate-600 dark:text-slate-300">{course.description}</p></Card>}</Page>;
+  const CourseIcon = course.icon;
+  const [tab, setTab] = useState("Overview");
+  const tabs = ["Overview", "Lessons", t("homework"), t("tests"), t("resources")];
+  return <Page title={course.name}><Card><div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-center"><div className="grid min-h-44 place-items-center rounded-lg p-4" style={{ background: course.image }}>{CourseIcon && <CourseIcon className="text-blue-700" size={52} />}</div><div><h3 className="break-words text-2xl font-black text-slate-950 sm:text-3xl">{course.name}</h3><p className="mt-1 break-words text-slate-600 dark:text-slate-300">{course.teacher} - {course.schedule}</p><div className="mt-5"><ProgressBar value={course.progress} label={t("courseProgress")} /></div><div className="mt-4 flex flex-wrap items-center gap-3"><p className="text-sm text-slate-600 dark:text-slate-300">Next: {lessons.find((lesson) => lesson.courseId === course.id)?.title || "Continue your next lesson"}</p><Button>{t("continueLearningFull")}</Button></div></div></div><div className="-mx-1 mt-5 flex gap-2 overflow-x-auto px-1 pb-1">{tabs.map((label) => <Button key={label} className="shrink-0" variant={tab === label ? "primary" : "outline"} onClick={() => setTab(label)}>{label}</Button>)}</div></Card>{tab === "Lessons" ? <LessonsPage embedded courseId={course.id} /> : <Card><h3 className="font-bold">{tab}</h3><p className="mt-2 text-slate-600 dark:text-slate-300">{course.description}</p><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><p className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">What you will learn: practise, explain, and review with confidence.</p><p className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">Upcoming homework: {course.nextAssignment}</p><p className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">Teacher: {course.teacher}</p></div></Card>}</Page>;
 }
 
 export function LessonsPage({ embedded = false, courseId }) {
@@ -195,7 +212,7 @@ export function AssignmentDetails() {
   const [file, setFile] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [confirm, setConfirm] = useState(false);
-  return <Page title="Assignment Submission"><div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]"><Card><h3 className="break-words text-xl font-bold">Science lab report</h3><p className="mt-2 text-slate-600 dark:text-slate-300">Explain your experiment, observations, data table, and conclusion. Include one paragraph about how you improved your method.</p><div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Late submissions may require a teacher note.</div><h4 className="mt-5 font-bold">Rubric</h4><div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">{["Method 10", "Data 15", "Conclusion 15"].map((r) => <Badge key={r}>{r} marks</Badge>)}</div></Card><Card><Textarea label="Text answer" placeholder="Type or paste your response..." /><label className="mt-4 grid w-full cursor-pointer place-items-center rounded-lg border-2 border-dashed border-slate-300 p-5 text-center dark:border-slate-700 sm:p-6"><Upload /><span className="mt-2 break-words text-sm">Upload PDF, DOCX, PNG under 10MB</span><input className="hidden" type="file" onChange={(e) => setFile(e.target.files?.[0])} /></label>{file && <p className="mt-3 break-words rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">{file.name} ready for preview</p>}<div className="mt-4 grid gap-2 sm:flex"><Button variant="outline"><Save size={18} /> Save Draft</Button><Button onClick={() => setConfirm(true)}>Submit</Button></div>{submitted && <p className="mt-3 rounded-lg bg-green-50 p-3 text-green-700">Assignment submitted successfully.</p>}</Card></div><Modal open={confirm} title="Submit assignment?" onClose={() => setConfirm(false)}><p className="text-sm text-slate-500">Please confirm that your answer and file are ready for your teacher to review.</p><div className="mt-5 grid gap-2 sm:flex sm:justify-end"><Button variant="outline" onClick={() => setConfirm(false)}>Cancel</Button><Button onClick={() => { setSubmitted(true); setConfirm(false); }}>Confirm Submit</Button></div></Modal></Page>;
+  return <Page title="Homework"><div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]"><Card><h3 className="break-words text-xl font-bold">Science lab report</h3><p className="mt-2 text-slate-600 dark:text-slate-300">Explain your experiment, observations, data table, and conclusion.</p><div className="mt-5 space-y-3">{["1. Read the instructions", "2. Download attached resources", "3. Add your answer", "4. Review your work", "5. Submit"].map((step) => <p key={step} className="rounded-lg bg-slate-50 p-3 text-sm font-semibold dark:bg-slate-800">{step}</p>)}</div><div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Due date: Jul 24 - Total marks: 40</div></Card><Card><Textarea label="Text answer" placeholder="Type your answer here..." /><label className="mt-4 grid w-full cursor-pointer place-items-center rounded-lg border-2 border-dashed border-slate-300 p-5 text-center dark:border-slate-700 sm:p-6"><Upload /><span className="mt-2 break-words text-sm">Upload your answer file</span><input className="hidden" type="file" onChange={(e) => setFile(e.target.files?.[0])} /></label>{file && <p className="mt-3 break-words rounded-lg bg-slate-50 p-3 text-sm dark:bg-slate-800">{file.name} ready for review</p>}<div className="mt-4 grid gap-2 sm:flex"><Button variant="outline"><Save size={18} /> Save Draft</Button><Button onClick={() => setConfirm(true)}>Submit Homework</Button></div>{submitted && <p className="mt-3 rounded-lg bg-green-50 p-3 text-green-700">Your homework was submitted successfully.</p>}</Card></div><Modal open={confirm} title="Submit homework?" onClose={() => setConfirm(false)}><p className="text-sm text-slate-500">Please confirm that your answer is ready for your teacher to review.</p><div className="mt-5 grid gap-2 sm:flex sm:justify-end"><Button variant="outline" onClick={() => setConfirm(false)}>Cancel</Button><Button onClick={() => { setSubmitted(true); setConfirm(false); }}>Submit Homework</Button></div></Modal></Page>;
 }
 
 export function QuizzesPage() {

@@ -63,6 +63,7 @@ function rolePath(role) {
 export default function AppLayout({ user, setUser, theme, setTheme }) {
   const safeUser = user || { name: "Demo User", role: "Student" };
   const { t, language, dir, toggleLanguage } = useLanguage();
+  const isStudent = safeUser.role === "Student";
   const [drawer, setDrawer] = useState(false);
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -124,7 +125,7 @@ export default function AppLayout({ user, setUser, theme, setTheme }) {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-50 dark:bg-slate-950" dir={dir}>
-      <div className={`fixed inset-y-0 z-30 hidden w-72 border-slate-200 dark:border-slate-800 lg:block ${dir === "rtl" ? "right-0 border-l" : "left-0 border-r"}`}>{side}</div>
+      {!isStudent && <div className={`fixed inset-y-0 z-30 hidden w-72 border-slate-200 dark:border-slate-800 lg:block ${dir === "rtl" ? "right-0 border-l" : "left-0 border-r"}`}>{side}</div>}
       <AnimatePresence>
         {drawer && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-40 bg-slate-950/50 lg:hidden" onMouseDown={() => setDrawer(false)}>
@@ -135,7 +136,7 @@ export default function AppLayout({ user, setUser, theme, setTheme }) {
           </motion.div>
         )}
       </AnimatePresence>
-      <div className={dir === "rtl" ? "lg:pr-72" : "lg:pl-72"}>
+      <div className={!isStudent ? (dir === "rtl" ? "lg:pr-72" : "lg:pl-72") : ""}>
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 px-3 py-2 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90 sm:px-4 sm:py-3">
           <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
             <Button variant="ghost" className="px-2 lg:hidden" aria-label={t("openNavigation")} onClick={() => setDrawer(true)}><Menu /></Button>
@@ -170,8 +171,13 @@ export default function AppLayout({ user, setUser, theme, setTheme }) {
             </div>
           )}
           {query && <div className={`absolute top-14 mx-3 w-[calc(100vw-1.5rem)] max-w-md rounded-lg border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-900 sm:top-16 ${dir === "rtl" ? "left-0 sm:left-36" : "right-0 sm:right-36"}`}><b className="break-words">{t("searchResultsFor")} "{query}"</b><p className="mt-2 text-sm text-slate-500">{t("searchResultsText")}</p></div>}
+          {isStudent && (
+            <nav className="mx-auto mt-3 hidden max-w-7xl gap-1 overflow-x-auto border-t border-slate-100 pt-2 lg:flex dark:border-slate-800" aria-label="Student navigation">
+              {items.slice(0, 5).map(([labelKey, slug, Icon]) => <NavLink key={slug} to={`/${rolePath(safeUser.role)}/${slug}`} className={({ isActive }) => `inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-semibold ${isActive ? "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200" : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900"}`}><Icon size={17} />{t(labelKey)}</NavLink>)}
+            </nav>
+          )}
         </header>
-        <main className={`mx-auto w-full max-w-[1920px] p-3 md:p-5 xl:p-6 ${safeUser.role === "Student" ? "mobile-safe-bottom lg:pb-6" : "pb-6"}`}><Outlet context={{ user: safeUser, home: roleHome[safeUser.role] }} /></main>
+        <main className={`mx-auto w-full p-3 md:p-5 xl:p-6 ${isStudent ? "mobile-safe-bottom max-w-7xl lg:pb-8" : "max-w-[1920px] pb-6"}`}><Outlet context={{ user: safeUser, home: roleHome[safeUser.role] }} /></main>
         {safeUser.role === "Student" && (
           <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden dark:border-slate-800 dark:bg-slate-950">
             {[
